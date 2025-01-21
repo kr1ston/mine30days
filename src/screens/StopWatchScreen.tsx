@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useRef} from 'react';
-import {View, Text, StyleSheet, Button, Alert} from 'react-native';
+import {View, Text, StyleSheet, Button, Alert, FlatList} from 'react-native';
 
 export default function StopWatchScreen() {
   const [isRunning, setIsRunning] = useState(false);
@@ -28,20 +28,27 @@ export default function StopWatchScreen() {
       timer.current = null;
     }
     setIsRunning(false);
+    timeRef.current = 0;
     setTime(0);
   };
   const record = () => {
     const _list = [...records, time];
     setRecords(_list);
-    setTime(0);
+  };
+  const pause = () => {
+    if (isRunning) {
+      setIsRunning(false);
+      clearInterval(timer.current);
+    }
   };
 
   const formatTime = (ms: number) => {
-    const minutes = Math.floor(ms / 60);
-    const seconds = Math.floor(ms % 60);
+    const minutes = Math.floor(ms / 6000);
+    const seconds = Math.floor((ms % 6000) / 100);
+    const milliSeconds = Math.floor((ms % 6000) % 100);
     return `${minutes.toString().padStart(2, '0')}:${seconds
       .toString()
-      .padStart(2, '0')}`;
+      .padStart(2, '0')}:${milliSeconds.toString().padStart(2, '0')}`;
   };
   useEffect(() => {
     return () => {
@@ -57,18 +64,23 @@ export default function StopWatchScreen() {
       </View>
       <View style={styles.actions}>
         <View>
-          <Button onPress={start} title="开始" />
-          <Button onPress={record} title="计次" />
-          <Button onPress={reset} title="重置" />
+          <Button onPress={start} title="开始" disabled={isRunning} />
+          <Button onPress={record} title="计次" disabled={!isRunning} />
+          <Button onPress={pause} title="暂停" disabled={!isRunning} />
+          <Button
+            onPress={reset}
+            title="重置"
+            disabled={!time && !records.length}
+          />
         </View>
         <View style={styles.list}>
-          {records.map((item, index) => {
-            return (
-              <View key={index}>
-                <Text>{formatTime(item)}</Text>
-              </View>
-            );
-          })}
+          <FlatList
+            data={records}
+            keyExtractor={(_, index) => index.toString()}
+            renderItem={({item}) => {
+              return <Text>{formatTime(item)}</Text>;
+            }}
+          />
         </View>
       </View>
     </View>
@@ -76,10 +88,40 @@ export default function StopWatchScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {},
-  time: {},
-  actions: {},
-  btn: {},
-  start: {},
-  list: {},
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    padding: 20,
+  },
+  time: {
+    alignItems: 'center',
+    paddingVertical: 30,
+  },
+  timeText: {
+    fontSize: 60,
+    fontWeight: '200',
+    fontVariant: ['tabular-nums'],
+  },
+  actions: {
+    flex: 1,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  list: {
+    flex: 1,
+  },
+  recordItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  recordText: {
+    fontSize: 16,
+    color: '#333',
+  },
 });
